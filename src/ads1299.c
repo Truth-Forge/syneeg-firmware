@@ -6,10 +6,33 @@
 #define ADS1299_WREG_BASE 0x40u
 #define ADS1299_ID_DEVICE_AND_CHANNEL_MASK 0x0Fu
 #define ADS1299_ID_EIGHT_CHANNEL_VALUE 0x0Eu
+#define ADS1299_CONFIG1_FIXED_BITS 0x90u
 
 static bool bus_is_valid(const syneeg_ads1299_bus_t *bus) {
     return bus != NULL && bus->select != NULL && bus->transfer != NULL &&
            bus->set_reset != NULL && bus->set_start != NULL && bus->delay_us != NULL;
+}
+
+static bool command_is_valid(syneeg_ads1299_command_t command) {
+    switch (command) {
+        case SYNEEG_ADS1299_CMD_WAKEUP:
+        case SYNEEG_ADS1299_CMD_STANDBY:
+        case SYNEEG_ADS1299_CMD_RESET:
+        case SYNEEG_ADS1299_CMD_START:
+        case SYNEEG_ADS1299_CMD_STOP:
+        case SYNEEG_ADS1299_CMD_RDATAC:
+        case SYNEEG_ADS1299_CMD_SDATAC:
+        case SYNEEG_ADS1299_CMD_RDATA:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool register_is_valid(syneeg_ads1299_register_t address) {
+    const int value = (int)address;
+    return value >= (int)SYNEEG_ADS1299_REG_ID &&
+           value < (int)SYNEEG_ADS1299_REGISTER_COUNT;
 }
 
 static syneeg_status_t transfer_selected(syneeg_ads1299_t *device,
@@ -79,7 +102,7 @@ syneeg_status_t syneeg_ads1299_hardware_reset(syneeg_ads1299_t *device) {
 
 syneeg_status_t syneeg_ads1299_command(syneeg_ads1299_t *device,
                                       syneeg_ads1299_command_t command) {
-    if (device == NULL || !bus_is_valid(&device->bus)) {
+    if (device == NULL || !bus_is_valid(&device->bus) || !command_is_valid(command)) {
         return SYNEEG_ERROR_ARGUMENT;
     }
     const uint8_t byte = (uint8_t)command;
@@ -98,7 +121,7 @@ syneeg_status_t syneeg_ads1299_command(syneeg_ads1299_t *device,
 syneeg_status_t syneeg_ads1299_read_register(syneeg_ads1299_t *device,
                                              syneeg_ads1299_register_t address,
                                              uint8_t *value) {
-    if (device == NULL || value == NULL || (uint8_t)address >= SYNEEG_ADS1299_REGISTER_COUNT) {
+    if (device == NULL || value == NULL || !register_is_valid(address)) {
         return SYNEEG_ERROR_ARGUMENT;
     }
     if (device->continuous) {
@@ -129,7 +152,7 @@ syneeg_status_t syneeg_ads1299_write_register(syneeg_ads1299_t *device,
                                               syneeg_ads1299_register_t address,
                                               uint8_t value,
                                               bool verify) {
-    if (device == NULL || (uint8_t)address >= SYNEEG_ADS1299_REGISTER_COUNT ||
+    if (device == NULL || !register_is_valid(address) ||
         address == SYNEEG_ADS1299_REG_ID ||
         address == SYNEEG_ADS1299_REG_LOFF_STATP ||
         address == SYNEEG_ADS1299_REG_LOFF_STATN) {
@@ -163,22 +186,62 @@ syneeg_status_t syneeg_ads1299_write_register(syneeg_ads1299_t *device,
     return readback == value ? SYNEEG_OK : SYNEEG_ERROR_VERIFY;
 }
 
-syneeg_ads1299_profile_t syneeg_ads1299_profile_8ch_250sps(void) {
-    syneeg_ads1299_profile_t profile;
-    memset(&profile, 0, sizeof(profile));
-
-    profile.config1 = 0x96u;
-    profile.config2 = 0xC0u;
-    profile.config3 = 0xECu;
-    profile.loff = 0x02u;
-    for (size_t i = 0u; i < SYNEEG_CHANNEL_COUNT; ++i) {
-        profile.channel_set[i] = 0x68u;
+syneeg_status_t syneeg_ads1299_rate_info(syneeg_ads1299_sample_rate_t sample_rate,
+                                         syneeg_ads1299_rate_info_t *info) {
+    if (info == NULL) {
+        return SYNEEG_ERROR_ARGUMENT;
     }
-    profile.bias_sensp = 0xFFu;
-    profile.bias_sensn = 0xFFu;
-    profile.misc1 = 0x00u;
-    profile.config4 = 0x00u;
-    return profile;
+
+    memset(info, 0, sizeof(*info));
+    info->sample_rate = sample_rate;
+    switch (sample_rate) {
+        case SYNEEG_ADS1299_RATE_250_SPS:
+            info->config1_dr_bits = 0x06u;
+            info->product_profile = true;
+            break;
+        case SYNEEG_ADS1299_RATE_500_SPS:
+            info->config1_dr_bits = 0x05u;
+            info->product_profile = true;
+            break;
+        case SYNEEG_ADS1299_RATE_1000_SPS:
+            info->config1_dr_bits = 0x04u;
+            info->product_profile = true;
+            break;
+        case SYNEEG_ADS1299_RATE_2000_SPS:
+            info->config1_dr_bits = 0x03u;
+            info->qualification_target = true;
+            break;
+        default:
+            return SYNEEG_ERROR_ARGUMENT;
+    }
+    return SYNEEG_OK;
+}
+
+syneeg_status_t syneeg_ads1299_profile_8ch(syneeg_ads1299_sample_rate_t sample_rate,
+                                           syneeg_ads1299_profile_t *profile) {
+    if (profile == NULL) {
+        return SYNEEG_ERROR_ARGUMENT;
+    }
+    syneeg_ads1299_rate_info_t info;
+    syneeg_status_t status = syneeg_ads1299_rate_info(sample_rate, &info);
+    if (status != SYNEEG_OK) {
+        return status;
+    }
+
+    memset(profile, 0, sizeof(*profile));
+
+    profile->config1 = (uint8_t)(ADS1299_CONFIG1_FIXED_BITS | info.config1_dr_bits);
+    profile->config2 = 0xC0u;
+    profile->config3 = 0xECu;
+    profile->loff = 0x02u;
+    for (size_t i = 0u; i < SYNEEG_CHANNEL_COUNT; ++i) {
+        profile->channel_set[i] = 0x68u;
+    }
+    profile->bias_sensp = 0xFFu;
+    profile->bias_sensn = 0xFFu;
+    profile->misc1 = 0x00u;
+    profile->config4 = 0x00u;
+    return SYNEEG_OK;
 }
 
 syneeg_status_t syneeg_ads1299_apply_profile(syneeg_ads1299_t *device,

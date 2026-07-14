@@ -118,9 +118,55 @@ int test_ads1299(void) {
     syneeg_ads1299_t device;
     TEST_ASSERT(syneeg_ads1299_init(&device, &bus) == SYNEEG_OK);
     TEST_ASSERT(device.device_id == 0x3Eu);
+    TEST_ASSERT(syneeg_ads1299_command(&device, (syneeg_ads1299_command_t)-1) ==
+                SYNEEG_ERROR_ARGUMENT);
+    TEST_ASSERT(syneeg_ads1299_command(&device, (syneeg_ads1299_command_t)0x03) ==
+                SYNEEG_ERROR_ARGUMENT);
+    TEST_ASSERT(syneeg_ads1299_command(&device, (syneeg_ads1299_command_t)0x102) ==
+                SYNEEG_ERROR_ARGUMENT);
+    uint8_t invalid_readback = 0u;
+    TEST_ASSERT(syneeg_ads1299_read_register(
+                    &device, (syneeg_ads1299_register_t)-1, &invalid_readback) ==
+                SYNEEG_ERROR_ARGUMENT);
+    TEST_ASSERT(syneeg_ads1299_read_register(
+                    &device, (syneeg_ads1299_register_t)256, &invalid_readback) ==
+                SYNEEG_ERROR_ARGUMENT);
+    TEST_ASSERT(syneeg_ads1299_write_register(
+                    &device, (syneeg_ads1299_register_t)-1, 0u, false) ==
+                SYNEEG_ERROR_ARGUMENT);
+    TEST_ASSERT(syneeg_ads1299_write_register(
+                    &device, (syneeg_ads1299_register_t)256, 0u, false) ==
+                SYNEEG_ERROR_ARGUMENT);
 
-    const syneeg_ads1299_profile_t profile = syneeg_ads1299_profile_8ch_250sps();
+    syneeg_ads1299_profile_t profile;
+    syneeg_ads1299_rate_info_t rate_info;
+    TEST_ASSERT(syneeg_ads1299_rate_info(SYNEEG_ADS1299_RATE_250_SPS, &rate_info) ==
+                SYNEEG_OK);
+    TEST_ASSERT(rate_info.config1_dr_bits == 0x06u);
+    TEST_ASSERT(rate_info.product_profile);
+    TEST_ASSERT(!rate_info.qualification_target);
+    TEST_ASSERT(syneeg_ads1299_profile_8ch(SYNEEG_ADS1299_RATE_250_SPS, &profile) ==
+                SYNEEG_OK);
     TEST_ASSERT(profile.config1 == 0x96u);
+    TEST_ASSERT(syneeg_ads1299_profile_8ch(SYNEEG_ADS1299_RATE_500_SPS, &profile) ==
+                SYNEEG_OK);
+    TEST_ASSERT(profile.config1 == 0x95u);
+    TEST_ASSERT(syneeg_ads1299_profile_8ch(SYNEEG_ADS1299_RATE_1000_SPS, &profile) ==
+                SYNEEG_OK);
+    TEST_ASSERT(profile.config1 == 0x94u);
+    TEST_ASSERT(syneeg_ads1299_rate_info(SYNEEG_ADS1299_RATE_2000_SPS, &rate_info) ==
+                SYNEEG_OK);
+    TEST_ASSERT(rate_info.config1_dr_bits == 0x03u);
+    TEST_ASSERT(!rate_info.product_profile);
+    TEST_ASSERT(rate_info.qualification_target);
+    TEST_ASSERT(syneeg_ads1299_profile_8ch(SYNEEG_ADS1299_RATE_2000_SPS, &profile) ==
+                SYNEEG_OK);
+    TEST_ASSERT(profile.config1 == 0x93u);
+    TEST_ASSERT(syneeg_ads1299_rate_info((syneeg_ads1299_sample_rate_t)0, &rate_info) ==
+                SYNEEG_ERROR_ARGUMENT);
+
+    TEST_ASSERT(syneeg_ads1299_profile_8ch(SYNEEG_ADS1299_RATE_250_SPS, &profile) ==
+                SYNEEG_OK);
     TEST_ASSERT(profile.config3 == 0xECu);
     TEST_ASSERT(profile.bias_sensp == 0xFFu);
     TEST_ASSERT(profile.bias_sensn == 0xFFu);

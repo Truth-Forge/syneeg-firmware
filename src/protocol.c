@@ -95,7 +95,7 @@ syneeg_status_t syneeg_protocol_encode_sample(const syneeg_sample_t *sample,
     }
     output[51] = sample->clock_quality;
     put_u16(&output[52], sample->configuration_generation);
-    put_u32(&output[54], sample->membership_generation);
+    put_u32(&output[54], sample->topology_generation);
     put_u16(&output[58], sample->gaps_before);
     put_u32(&output[60], syneeg_crc32c(output, 60u));
     *written = SYNEEG_NATIVE_SAMPLE_BYTES;
@@ -128,8 +128,92 @@ syneeg_status_t syneeg_protocol_decode_sample(const uint8_t *input,
     }
     sample->clock_quality = input[51];
     sample->configuration_generation = get_u16(&input[52]);
-    sample->membership_generation = get_u32(&input[54]);
+    sample->topology_generation = get_u32(&input[54]);
     sample->gaps_before = get_u16(&input[58]);
+    return SYNEEG_OK;
+}
+
+syneeg_status_t syneeg_protocol_encode_optical(const syneeg_optical_result_t *result,
+                                               uint8_t *output,
+                                               size_t capacity,
+                                               size_t *written) {
+    if (result == NULL || output == NULL || written == NULL) {
+        return SYNEEG_ERROR_ARGUMENT;
+    }
+    if (capacity < SYNEEG_NATIVE_OPTICAL_BYTES) {
+        return SYNEEG_ERROR_CAPACITY;
+    }
+    if ((result->wavelength_nm != 735u && result->wavelength_nm != 850u) ||
+        result->source_state > (uint8_t)SYNEEG_OPTICAL_SOURCE_FAULT) {
+        return SYNEEG_ERROR_FORMAT;
+    }
+
+    memset(output, 0, SYNEEG_NATIVE_OPTICAL_BYTES);
+    output[0] = SYNEEG_NATIVE_OPTICAL_VERSION;
+    output[1] = (uint8_t)SYNEEG_FRAME_OPTICAL_RESULT;
+    output[3] = SYNEEG_OPTICAL_DETECTOR_COUNT;
+    put_u32(&output[4], result->node_id);
+    put_u32(&output[8], result->segment_id);
+    put_u32(&output[12], result->sequence);
+    put_u64(&output[16], result->carrier_tick);
+    output[24] = result->source_id;
+    output[25] = result->source_state;
+    put_u16(&output[26], result->wavelength_nm);
+    put_u32(&output[28], result->accumulation_count);
+    memcpy(&output[32], result->detector_id, SYNEEG_OPTICAL_DETECTOR_COUNT);
+    for (size_t i = 0u; i < SYNEEG_OPTICAL_DETECTOR_COUNT; ++i) {
+        put_u32(&output[36u + (i * 4u)], (uint32_t)result->accumulated_raw[i]);
+    }
+    output[52] = result->saturation_mask;
+    output[53] = result->coupling_mask;
+    output[54] = result->fault_evidence;
+    output[55] = result->clock_quality;
+    put_u16(&output[56], result->configuration_generation);
+    put_u16(&output[58], result->gaps_before);
+    put_u32(&output[60], syneeg_crc32c(output, 60u));
+    *written = SYNEEG_NATIVE_OPTICAL_BYTES;
+    return SYNEEG_OK;
+}
+
+syneeg_status_t syneeg_protocol_decode_optical(const uint8_t *input,
+                                               size_t length,
+                                               syneeg_optical_result_t *result) {
+    if (input == NULL || result == NULL) {
+        return SYNEEG_ERROR_ARGUMENT;
+    }
+    if (length != SYNEEG_NATIVE_OPTICAL_BYTES ||
+        input[0] != SYNEEG_NATIVE_OPTICAL_VERSION ||
+        input[1] != (uint8_t)SYNEEG_FRAME_OPTICAL_RESULT ||
+        input[3] != SYNEEG_OPTICAL_DETECTOR_COUNT) {
+        return SYNEEG_ERROR_FORMAT;
+    }
+    if (get_u32(&input[60]) != syneeg_crc32c(input, 60u)) {
+        return SYNEEG_ERROR_VERIFY;
+    }
+
+    memset(result, 0, sizeof(*result));
+    result->node_id = get_u32(&input[4]);
+    result->segment_id = get_u32(&input[8]);
+    result->sequence = get_u32(&input[12]);
+    result->carrier_tick = get_u64(&input[16]);
+    result->source_id = input[24];
+    result->source_state = input[25];
+    result->wavelength_nm = get_u16(&input[26]);
+    result->accumulation_count = get_u32(&input[28]);
+    memcpy(result->detector_id, &input[32], SYNEEG_OPTICAL_DETECTOR_COUNT);
+    for (size_t i = 0u; i < SYNEEG_OPTICAL_DETECTOR_COUNT; ++i) {
+        result->accumulated_raw[i] = (int32_t)get_u32(&input[36u + (i * 4u)]);
+    }
+    result->saturation_mask = input[52];
+    result->coupling_mask = input[53];
+    result->fault_evidence = input[54];
+    result->clock_quality = input[55];
+    result->configuration_generation = get_u16(&input[56]);
+    result->gaps_before = get_u16(&input[58]);
+    if ((result->wavelength_nm != 735u && result->wavelength_nm != 850u) ||
+        result->source_state > (uint8_t)SYNEEG_OPTICAL_SOURCE_FAULT) {
+        return SYNEEG_ERROR_FORMAT;
+    }
     return SYNEEG_OK;
 }
 

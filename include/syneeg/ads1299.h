@@ -77,6 +77,20 @@ typedef struct {
     uint8_t config4;
 } syneeg_ads1299_profile_t;
 
+typedef enum {
+    SYNEEG_ADS1299_RATE_250_SPS = 250,
+    SYNEEG_ADS1299_RATE_500_SPS = 500,
+    SYNEEG_ADS1299_RATE_1000_SPS = 1000,
+    SYNEEG_ADS1299_RATE_2000_SPS = 2000
+} syneeg_ads1299_sample_rate_t;
+
+typedef struct {
+    syneeg_ads1299_sample_rate_t sample_rate;
+    uint8_t config1_dr_bits;
+    bool product_profile;
+    bool qualification_target;
+} syneeg_ads1299_rate_info_t;
+
 syneeg_status_t syneeg_ads1299_init(syneeg_ads1299_t *device,
                                     const syneeg_ads1299_bus_t *bus);
 syneeg_status_t syneeg_ads1299_hardware_reset(syneeg_ads1299_t *device);
@@ -96,7 +110,10 @@ syneeg_status_t syneeg_ads1299_stop(syneeg_ads1299_t *device);
 syneeg_status_t syneeg_ads1299_read_frame(syneeg_ads1299_t *device,
                                          syneeg_sample_t *sample);
 
-syneeg_ads1299_profile_t syneeg_ads1299_profile_8ch_250sps(void);
+syneeg_status_t syneeg_ads1299_rate_info(syneeg_ads1299_sample_rate_t sample_rate,
+                                         syneeg_ads1299_rate_info_t *info);
+syneeg_status_t syneeg_ads1299_profile_8ch(syneeg_ads1299_sample_rate_t sample_rate,
+                                           syneeg_ads1299_profile_t *profile);
 int32_t syneeg_ads1299_sign_extend24(const uint8_t bytes[3]);
 bool syneeg_ads1299_is_eight_channel_id(uint8_t value);
 

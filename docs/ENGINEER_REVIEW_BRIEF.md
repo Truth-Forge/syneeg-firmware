@@ -10,8 +10,8 @@ The reviewer is expected to exercise ordinary professional judgment, identify de
 
 ## Boards in scope
 
-1. **SynPod Rev A:** one ADS1299, one STM32G474CEU6, eight EEG channels, ten-path SynTrode interface, local/elected clock circuitry, CAN-FD, M-LVDS clock distribution, clean local rails, identity storage, SWD, and one SynBus/node-bridge interface.
-2. **SynDock Rev A:** off-head 5 V power entry, separate isolated USB data connection, STM32 USB-to-SynBus gateway, CAN-FD, protection, and status/fault behavior.
+1. **SynPod Rev A:** one ADS1299, one non-authoritative RP2040/reference node with external MCP2518FD-class CAN controller, eight EEG channels, separate optional OpenfNIRS-derived optical board, 20-contact Hybrid SynTrode, 16-contact SynLink, received common clock/control, clean local rails, identity storage, SWD, and recovery.
+2. **SynDock Rev A:** centralized STM32G474 authority, CAN-FD collection, common clock/control, ESP32-C6, integrated display, off-head 5 V power entry, separate isolated USB data connection, protection, and explicit topology/status/fault behavior.
 
 SynLink strap mechanics, SynPad, SynCap, enclosure industrial design, and electrode manufacture are separate work. This review covers the electrical interfaces they must satisfy, not their final mechanical construction.
 
@@ -32,7 +32,8 @@ For every sheet, return annotated source/PDF findings and a table containing:
 Review at minimum:
 
 - ADS1299 supplies, reference, VCAP, clock, reset/start, SPI, REF, BIAS, lead-off, common mode, input protection/filtering, exposed pad, and test modes;
-- STM32 supplies, VCAP, reset, boot, clocks, SWD, DMA/peripheral feasibility, FDCAN, USB, and recovery;
+- SynPod RP2040, external CAN controller, ADS1299 DMA, optical-result intake, debug, and recovery;
+- centralized SynDock STM32 supplies, VCAP, reset, boot, clocks, SWD, FDCAN, USB, timing authority, and recovery;
 - power startup/shutdown, ±2.5 V generation, ripple/noise, dissipation, brownout, short, reverse and sequencing;
 - CAN-FD and M-LVDS physical layers, contention defaults, termination, ESD, topology and connector behavior;
 - SynDock USB isolation and prevention of data-port back-powering;

@@ -1,48 +1,36 @@
 # SynEEG Firmware
 
-Open firmware foundation for the SynEEG eight-channel SynPod and its SynDock gateway.
+Portable firmware behavior for the distributed SynEEG EEG/fNIRS system.
 
-The first hardware target is one ADS1299 and one STM32-family controller per active SynPod. Each SynPod acquires eight signed 24-bit channels at 250 samples per second, preserves the ADS1299 status word, and can operate alone or participate in one coordinated cap epoch. SynDock carries the wired host boundary and translates native SynEEG traffic for host software such as BrainFlow.
+Each active SynPod captures one ADS1299 locally through a non-authoritative RP2040-class node and transports identified records through an external MCP2518FD-class CAN-FD controller and MCP2562FD transceiver. A Hybrid SynPod also accepts reduced results from its separate OpenfNIRS-derived optical RP2040 board. Raw optical ADC samples remain local.
 
-This repository deliberately separates three kinds of truth:
+SynDock is the permanent system authority. Its STM32G474 discovers and addresses Pods, owns topology generations and segment transitions, distributes the 2.048 MHz clock plus synchronized control, collects EEG and optical records, and exposes the native wired stream. The ESP32-C6 and display are operational and connectivity surfaces; neither can become acquisition authority.
 
-- `src/` and `include/` are portable, host-tested firmware behavior.
-- `platform/stm32/` is the hardware integration contract that a generated STM32Cube project must satisfy.
-- `docs/` records selected parts, evidence, open engineering decisions, verification gates, and the boundary between automated checks and physical validation.
+## Implemented portable behavior
 
-## Why this repository exists
+- ADS1299 command/register transport, verified configuration, and signed 24-bit conversion decoding;
+- selectable 250, 500, and 1,000 SPS product profiles;
+- a 2,000 SPS driver profile marked explicitly as a full-system qualification target, not a qualified product profile;
+- a permanent SynDock coordinator and addressed non-authoritative Pod node state machine;
+- topology-generation changes that enter an explicit stop-required state, emit a broadcast abort for the active topology, and require a strictly higher new segment ID, plus authority, address, and stale-command rejection;
+- a lossless 64-byte EEG frame with source, segment, sequence, shared timestamp, ADS status, eight signed 24-bit channels, configuration/topology generations, gaps, and CRC-32C;
+- a separate versioned 64-byte optical result frame with source/detector identity, wavelength and source state, four accumulated detector results, saturation/coupling/fault evidence, timestamp, gaps, and CRC-32C;
+- OpenBCI Cyton-compatible projection for use only at the SynDock/host boundary; and
+- host-side tests independent of RP2040 or STM32 SDKs.
 
-SynEEG is being developed on the premise that serious instrumentation can be made more accessible without hiding it behind expert-only workflows. Reference designs, manufacturer documentation, AI-assisted drafting, automated checking, editable sources, inexpensive fabrication, and focused expert review can turn an open question into an auditable design.
+## Processor boundaries
 
-Expert review remains valuable, but it is applied to concrete claims and artifacts. The reviewer receives a selected circuit, a selected bill of materials, calculations, machine-check results, and explicit questions—not an invitation to redefine the product or charge for rediscovering standard patterns.
+- SynPod RP2040/reference controller: ADS1299 SPI/DMA, sequence/gap/fault evidence, optical-result intake, and CAN-node transport.
+- Optical RP2040: OpenfNIRS-derived source execution, ADC/PIO/DMA acquisition, accumulation, and reduced optical results.
+- SynDock STM32G474: discovery, addressing, common clock/control, unified epochs, timestamps, topology, fault segmentation, CAN coordination, and USB acquisition.
+- SynDock ESP32-C6: wireless/application transport, updates, and display-state hosting without acquisition authority.
 
-## Current scope
-
-Implemented now:
-
-- ADS1299 command and register transport with readback verification;
-- a conservative eight-channel, 250-SPS configuration profile;
-- 27-byte conversion-frame decoding and signed 24-bit expansion;
-- a fixed native sample frame that fits one CAN-FD payload;
-- OpenBCI Cyton-compatible eight-channel packet encoding at the SynDock boundary;
-- a tested minimum-stable-node election primitive that preserves a required segment boundary when observed membership changes;
-- host-side tests that run without a board.
-
-Reserved for the board integration stage:
-
-- STM32Cube-generated startup and peripheral initialization;
-- `DRDY` interrupt to SPI DMA wiring;
-- FDCAN filters, queues, timestamps, and recovery;
-- full discovery, membership snapshot, proposal/acknowledgement, duplicate-identity, and coordinated-start protocol messages;
-- production identity/calibration storage;
-- bootloader and signed recovery image;
-- physical clock-source switching and elected clock distribution;
-- hardware-in-loop and analog performance qualification.
+The C core is processor-agnostic. Board adapters provide deterministic SPI/DMA, CAN-FD, timers, GPIO, storage, and recovery without leaking vendor HAL types into the portable interfaces.
 
 ## Build and test
 
 ```sh
-cmake -S . -B build -G Ninja
+cmake -S . -B build
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
@@ -50,17 +38,15 @@ ctest --test-dir build --output-on-failure
 ## Design and evidence map
 
 - [Firmware architecture](docs/ARCHITECTURE.md)
-- [Rev A selected hardware stack](docs/REV_A_REFERENCE_DESIGN.md)
+- [Rev A processor and interface selections](docs/REV_A_REFERENCE_DESIGN.md)
 - [Reference implementation and license ledger](docs/REFERENCE_IMPLEMENTATIONS.md)
 - [Firmware requirements matrix](docs/FIRMWARE_REQUIREMENTS_MATRIX.md)
 - [AI-assisted electrical engineering method](docs/AI_ASSISTED_ELECTRICAL_ENGINEERING.md)
 - [Independent engineer review brief](docs/ENGINEER_REVIEW_BRIEF.md)
 - [Pre-fabrication release gate](docs/PRE_FABRICATION_RELEASE_GATE.md)
 
-## Authority
+## Authority and qualification
 
-The product definition remains the SynEEG system specification in Truth Forge. This repository implements that specification; it does not silently replace it. Exact hardware choices proposed here are Rev A recommendations until they are incorporated into a released schematic and the governing specification.
+The product authority is `SynEEG_SPEC.md` in Truth Forge, with `SynEEG_BOARD_DESIGN_SPEC.md` and the hardware repository's `requirements/design_contract.json` controlling the current board implementation. Passing host tests proves portable logic only. Rate, synchronization, CAN load, optical quality, noise, thermal, safety, and long-duration claims remain pending the specified physical qualification.
 
-## Licensing
-
-New SynEEG firmware and documentation in this repository are released under Apache-2.0. The permissive license and explicit patent grant support community use while preserving source provenance. Third-party projects listed in the evidence ledger are references only and are not vendored here. The future hardware repository will make a separate explicit open-hardware license selection appropriate to editable PCB sources.
+New SynEEG firmware and documentation in this repository are Apache-2.0. Third-party projects in the evidence ledger are references only unless an import is recorded explicitly with its provenance and license.
