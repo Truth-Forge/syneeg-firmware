@@ -1,0 +1,7 @@
+build*/
+*.plist
+.cache/
+.DS_Store
+*.swp
+*.user
+*.launch

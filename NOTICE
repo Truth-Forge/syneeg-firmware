@@ -1,0 +1,6 @@
+SynEEG Firmware
+Copyright 2026 Jeremy Serna
+
+This repository contains newly authored SynEEG code and documentation.
+Projects named in docs/REFERENCE_IMPLEMENTATIONS.md are evidence and design
+references only. No third-party source code is vendored in this baseline.
