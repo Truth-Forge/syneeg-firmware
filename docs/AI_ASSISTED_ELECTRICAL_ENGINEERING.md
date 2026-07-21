@@ -25,7 +25,7 @@ The goal is not to remove expertise. It is to remove expertise as an all-or-noth
 | Requirements | Extract `shall` statements, find conflicts, build traceability and operating-state tables | requirement matrix with source line and verification method |
 | Architecture | Select candidate parts and standard circuits from manufacturer references and open implementations | block diagrams, power tree, interface tables, decision ledger |
 | Schematic drafting | Create the first editable KiCad schematic and symbol/footprint library | native `.kicad_sch`, PDF plots, netlist, ERC report |
-| Calculation/simulation | Calculate rails, tolerances, filters, loading, fault current, CAN timing; run SPICE where valid models exist | calculation notebooks, model provenance, corner results |
+| Calculation/simulation | Calculate rails, tolerances, filters, loading, fault current, RS-485 scheduling/timing; run SPICE where valid models exist | calculation notebooks, model provenance, corner results |
 | BOM | Resolve exact MPNs, lifecycle, stock, alternates, package and datasheet links | machine-readable BOM and approved-alternate rationale |
 | Placement | Generate and compare floorplans; lock sensitive functional zones and mechanical keepouts | placement variants and constraint file |
 | Routing | Route candidates after stackup/net classes are defined; preserve critical analog constraints | native PCB candidates, length/clearance reports |
@@ -49,7 +49,7 @@ The designer should receive an actual candidate design package. Before engagemen
 6. a preliminary PCB outline derived from the printed enclosure envelope;
 7. component floorplan and keepouts separating electrode, analog, power-switching, clock, digital, and bus zones;
 8. a preliminary routed PCB or multiple route candidates;
-9. rail, current, voltage-drop, clock, CAN, M-LVDS, filter, leakage, fault-current, and tolerance calculations;
+9. rail, current, voltage-drop, clock, RS-485, differential-clock, filter, leakage, fault-current, and tolerance calculations;
 10. ERC, DRC, schematic-layout parity, BOM, footprint, and pin-map reports;
 11. a risk register with one requested review disposition per risk;
 12. a verification plan and first-power bring-up procedure.

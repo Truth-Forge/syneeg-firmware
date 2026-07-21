@@ -10,8 +10,8 @@ The reviewer is expected to exercise ordinary professional judgment, identify de
 
 ## Boards in scope
 
-1. **SynPod Rev A:** one ADS1299, one non-authoritative RP2040/reference node with external MCP2518FD-class CAN controller, eight EEG channels, separate optional OpenfNIRS-derived optical board, 20-contact Hybrid SynTrode, 16-contact SynLink, received common clock/control, clean local rails, identity storage, SWD, and recovery.
-2. **SynDock Rev A:** centralized STM32G474 authority, CAN-FD collection, common clock/control, ESP32-C6, integrated display, off-head 5 V power entry, separate isolated USB data connection, protection, and explicit topology/status/fault behavior.
+1. **SynPod Rev A:** one ADS1299, one non-authoritative RP2040/reference node with addressed half-duplex RS-485, eight EEG channels, a separate optional OpenfNIRS-derived optical board, separate round ten-contact EEG and 24-position optical SynTrode entries, a 16-contact SynLink, received common clock/control, clean local rails, identity storage, SWD, and recovery.
+2. **SynDock Rev A:** centralized STM32G474 authority, deterministic RS-485 collection, common clock/control, ESP32-C6, integrated display, off-head 5 V power entry, separate isolated USB data connection, protection, and explicit topology/status/fault behavior.
 
 SynLink strap mechanics, SynPad, SynCap, enclosure industrial design, and electrode manufacture are separate work. This review covers the electrical interfaces they must satisfy, not their final mechanical construction.
 
@@ -32,10 +32,10 @@ For every sheet, return annotated source/PDF findings and a table containing:
 Review at minimum:
 
 - ADS1299 supplies, reference, VCAP, clock, reset/start, SPI, REF, BIAS, lead-off, common mode, input protection/filtering, exposed pad, and test modes;
-- SynPod RP2040, external CAN controller, ADS1299 DMA, optical-result intake, debug, and recovery;
-- centralized SynDock STM32 supplies, VCAP, reset, boot, clocks, SWD, FDCAN, USB, timing authority, and recovery;
+- SynPod RP2040, RS-485 transceiver/direction control, ADS1299 DMA, optical-result intake, debug, and recovery;
+- centralized SynDock STM32 supplies, VCAP, reset, boot, clocks, SWD, UART/RS-485 scheduling, USB, timing authority, and recovery;
 - power startup/shutdown, ±2.5 V generation, ripple/noise, dissipation, brownout, short, reverse and sequencing;
-- CAN-FD and M-LVDS physical layers, contention defaults, termination, ESD, topology and connector behavior;
+- RS-485 and differential-clock physical layers, contention/failsafe defaults, termination, ESD, topology and connector behavior;
 - SynDock USB isolation and prevention of data-port back-powering;
 - exact parts, packages, symbols, footprints and sourcing.
 
@@ -45,7 +45,7 @@ Before routing, approve or correct:
 
 - board outline and height/keepout inputs;
 - layer stackup and reference planes;
-- analog, input, reference, bias, power-switching, digital, CAN, clock, debug and connector zones;
+- analog, input, reference, bias, power-switching, digital, RS-485, clock, debug and connector zones;
 - placement of every ADS1299 support component;
 - switching-current and signal-return paths;
 - critical net classes, differential-pair rules, vias, clearances, impedance and test access.

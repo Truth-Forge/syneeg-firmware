@@ -2,7 +2,7 @@
 
 ## 1. Authority and scope
 
-This repository implements portable behavior beneath the current [SynEEG product specification](/Users/jeremyserna/truth_forge/docs/brands/synaptic_silhouette/products/syneeg/SynEEG_SPEC.md) and [board design specification](/Users/jeremyserna/truth_forge/docs/brands/synaptic_silhouette/products/syneeg/SynEEG_BOARD_DESIGN_SPEC.md). The released hardware contract is `/Users/jeremyserna/apps_dev/syneeg-hardware/requirements/design_contract.json`.
+This repository implements portable behavior beneath the current [SynEEG product specification](https://github.com/Truth-Forge/truth_forge/blob/main/docs/brands/synaptic_silhouette/products/syneeg/SynEEG_SPEC.md). That is the only product prose authority. The adjacent hardware repository's `requirements/design_contract.json` is the board implementation contract.
 
 The architecture has one permanent authority: the STM32G474 in SynDock. SynPods never elect a master and their physical order never determines identity or timing.
 
@@ -10,7 +10,7 @@ The architecture has one permanent authority: the STM32G474 in SynDock. SynPods 
 
 | Processor | Owns | Does not own |
 |---|---|---|
-| SynPod RP2040/reference node | ADS1299 SPI/DMA, local sequence/gap/fault evidence, optical-result intake, addressed CAN transport, identity and recovery | Global epochs, shared clock, host or wireless UI |
+| SynPod RP2040/reference node | ADS1299 SPI/DMA, local sequence/gap/fault evidence, optical-result intake, addressed RS-485 framing/transport, identity and recovery | Global epochs, shared clock, bus scheduling, host or wireless UI |
 | Optical RP2040 | OpenfNIRS-derived dual-wavelength source control, AD7380 PIO/DMA acquisition, local accumulation, reduced optical results | SynBus timing, USB, radio, global topology |
 | SynDock STM32G474 | Pod discovery/addressing, topology generations, clock and START/RESET control, unified EEG/optical epochs, collection, timestamps, fault segmentation and USB acquisition | Display rendering or wireless application work |
 | SynDock ESP32-C6 | Wireless/application transport, updates, and display-state hosting | Acquisition clock, timing authority, ADS1299 or fNIRS acquisition |
@@ -27,7 +27,7 @@ ADS1299 DRDY
   -> reserve a fixed DMA slot
   -> read 27 bytes by SPI DMA
   -> seal ADS status + eight 24-bit channels + gap/fault evidence
-  -> queue a fixed native frame for the external CAN-FD controller
+  -> queue a fixed native record for the next SynDock-assigned RS-485 transmit slot
 ```
 
 Transport never delays the next conversion. Queue exhaustion or DMA failure consumes the attempted sequence and becomes explicit gap/fault evidence. No dynamic allocation is required after acquisition is armed.
@@ -65,11 +65,11 @@ Command sequence, topology generation, and segment ID are 32-bit serial numbers 
 
 Pods also reject commands with the wrong authority ID or destination. A one-Pod prefrontal carrier and a multi-Pod SynCap use the same coordinator/client path. Neither configuration elects a Pod.
 
-The portable coordinator establishes deterministic policy. Hardware adapters still must implement discovery retries, authenticated/recoverable identity provisioning, bounded control acknowledgement, CAN filtering, clock-presence qualification, and physical fault handling.
+The portable coordinator establishes deterministic policy. Hardware adapters still must implement discovery retries, authenticated/recoverable identity provisioning, bounded control acknowledgement, RS-485 address filtering and direction control, slot/turnaround timing, clock-presence qualification, and physical fault handling.
 
 ## 5. Native carriers
 
-All multibyte values use network byte order. CAN-FD link integrity is supplemented by end-to-end CRC-32C so records remain verifiable after gateway buffering or file transport.
+All multibyte values use network byte order. The published RS-485 framing adds address, length, and transport control around these native records. End-to-end CRC-32C keeps records verifiable after SynBus and gateway buffering. The 64-byte EEG and optical payloads remain semantic records rather than a claim that one payload equals one physical bus transaction.
 
 ### 5.1 EEG sample, version 1, 64 bytes
 
@@ -129,6 +129,6 @@ BrainFlow is the immediate EEG compatibility path. Optical results remain availa
 
 ## 7. Platform contracts and pending evidence
 
-The SynPod adapter must provide deterministic ADS1299 SPI/DMA, `DRDY`, timers, RP2040-to-MCP2518FD transport, fixed buffers, identity storage, watchdog and recovery. The optical adapter must preserve the OpenfNIRS PIO/DMA and accumulation boundary. The SynDock adapter must provide STM32G474 CAN-FD, common clock/control, hardware timestamps, USB, topology/fault state, and the isolated ESP32-C6 handoff.
+The SynPod adapter must provide deterministic ADS1299 SPI/DMA, `DRDY`, timers, RP2040 UART/RS-485 direction control, fixed buffers, identity storage, watchdog, and recovery. The optical adapter must preserve the OpenfNIRS PIO/DMA and accumulation boundary. The SynDock adapter must provide STM32G474 RS-485 master scheduling, common clock/control, hardware timestamps, USB, topology/fault state, and the isolated ESP32-C6 handoff.
 
-Host tests verify register images, state transitions, addressing, stale/authority rejection, signed decoding, field round trips, gaps, and CRC. They do not prove interrupt latency, CAN loading, clock skew/drift, analog noise, optical performance, power, thermal behavior, isolation, wearer safety, or long-duration reliability. Those remain physical release gates.
+Host tests verify register images, state transitions, addressing, stale/authority rejection, signed decoding, field round trips, gaps, and CRC. They do not prove interrupt latency, RS-485 loading/turnaround, clock skew/drift, analog noise, optical performance, power, thermal behavior, isolation, wearer safety, or long-duration reliability. Those remain physical release gates.

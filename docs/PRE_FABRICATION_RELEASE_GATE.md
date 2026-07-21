@@ -14,7 +14,7 @@ No SynEEG board package is sent for fabrication until the exact revision passes 
 - [ ] Every symbol pin number and function has been checked against the current manufacturer datasheet.
 - [ ] ADS1299 supplies, reference, VCAP capacitors, clock, reset/start, SPI, REF, BIAS, lead-off, exposed pad, and input common-mode paths have a sheet-level audit.
 - [ ] STM32 power, VCAP, reset, boot, SWD, oscillators, decoupling, and alternate-function pins have a sheet-level audit.
-- [ ] CAN-FD, M-LVDS clock distribution, termination, clock mux defaults, and driver contention states have a sheet-level audit.
+- [ ] RS-485, differential clock distribution, termination, failsafe defaults, direction control, and driver contention states have a sheet-level audit.
 - [ ] Every regulator and protection circuit has startup, shutdown, brownout, reverse, short, and fault behavior documented.
 - [ ] USB power and USB data domains in SynDock cannot unintentionally bypass isolation or back-power the worn system.
 - [ ] ERC has zero unexplained errors or warnings.
@@ -32,9 +32,9 @@ No SynEEG board package is sent for fabrication until the exact revision passes 
 - [ ] Fabricator stackup, material, finished thickness, copper weight, via process, drill limits, and controlled-impedance rules are entered into the PCB source.
 - [ ] ADS1299 input, REF, BIAS, reference, VCAP, and supply loops are reviewed at component-and-via level.
 - [ ] LM27762 charge-pump loop and switching return remain outside the sensitive input-current paths.
-- [ ] Clock, SPI, CAN, M-LVDS, LED, and MCU return currents have continuous controlled paths.
-- [ ] CAN and M-LVDS topology, termination, stubs, branch count, and common-mode limits match the released SynLink configuration.
-- [ ] Test points remain accessible after assembly for every rail, ground, clock, `DRDY`, SPI, CAN, M-LVDS, reset, boot, SWD, and fault output.
+- [ ] Clock, SPI, RS-485, LED, and MCU return currents have continuous controlled paths.
+- [ ] RS-485 and differential-clock topology, termination, stubs, branch count, failsafe bias, and common-mode limits match the released SynLink configuration.
+- [ ] Test points remain accessible after assembly for every rail, ground, clock, `DRDY`, SPI, RS-485 A/B and direction control, reset, boot, SWD, and fault output.
 - [ ] PCB and solder joints carry no enclosure or SynLink structural load.
 - [ ] DRC and schematic-layout parity have zero unexplained errors or warnings.
 
@@ -43,7 +43,7 @@ No SynEEG board package is sent for fabrication until the exact revision passes 
 - [ ] Power budget includes typical, startup, maximum, five-node, short-circuit, and brownout cases.
 - [ ] SynLink voltage drop is calculated at minimum source voltage and maximum qualified length/topology.
 - [ ] Analog filter, input protection leakage, resistor noise, channel mismatch, bandwidth, and overload recovery are calculated at tolerance corners.
-- [ ] CAN-FD bit timing and oscillator tolerance are calculated for the released bus length and node count.
+- [ ] RS-485 baud rate, slot budget, turnaround, oscillator tolerance, failsafe bias, termination, stub limits, and margin are calculated for the released bus length and node count.
 - [ ] M-LVDS clock termination and signal integrity are simulated or otherwise justified for the released topology.
 - [ ] Rail simulations use traceable models and include startup and load transients where applicable.
 - [ ] Thermal estimates fit the closed enclosure and expected wearer-facing temperature limit.
@@ -65,7 +65,7 @@ No SynEEG board package is sent for fabrication until the exact revision passes 
 - [ ] Bring-up uses a current-limited source and defined stop conditions.
 - [ ] Programming and recovery image are built from the tagged firmware revision.
 - [ ] Test fixtures and expected waveforms/register values are ready before boards arrive.
-- [ ] Sequence covers unpowered inspection, resistance checks, rail-by-rail power, clock, reset, ADS ID, register readback, internal test signal, shorted-input noise, CAN, USB, and multi-node timing.
+- [ ] Sequence covers unpowered inspection, resistance checks, rail-by-rail power, clock, reset, ADS ID, register readback, internal test signal, shorted-input noise, RS-485, USB, and multi-node timing.
 - [ ] Raw instrument data, firmware logs, photos, board serial, rework, and deviations have a recording location.
 - [ ] A first article is not worn until the specification’s bench electrical, fault-current, isolation, thermal, material, and mechanical-release gates are complete.
 
