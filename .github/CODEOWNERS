@@ -1,0 +1,10 @@
+# Default owner and self-protection for the GitHub adapter.
+* @jeremyserna
+/.github/ @jeremyserna
+
+# Executable protocol and acquisition authority.
+/AGENTS.md @jeremyserna
+/README.md @jeremyserna
+/src/ @jeremyserna
+/include/ @jeremyserna
+/platform/ @jeremyserna
