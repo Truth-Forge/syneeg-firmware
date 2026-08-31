@@ -1,5 +1,10 @@
 # SynEEG Firmware — Agent Contract
 
+**Universal coding policy:**
+`/Users/jeremyserna/truth_forge/docs/ecosystem/BUILD_PROCESS_PORTABLE.html`.
+Read it before creating or materially changing software. `CODE_POLICY_BINDING.json`
+is this repository's machine-readable pointer to that policy, not a policy copy.
+
 Portable firmware behavior for the distributed SynEEG EEG/fNIRS system. **This repo owns executable protocol and acquisition behavior** — the other SynEEG repos may cite that behavior but must not create a competing protocol authority.
 
 ## System invariants (from `README.md` — binding)
